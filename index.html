@@ -182,13 +182,15 @@ function liveCard(x){const o=x.open,m=toR(o.eq_mark,x.lots),liq=toR(o.eq_liq,x.l
  return`<div class="card sec" id="lc_${x.id}"><div class="ch"><h3><span class="sw" style="background:${C[x.i]}"></span>${x.id} · ${x.name}</h3><span><span class="chip" style="font-size:13px"><b>${x.lots} lots</b> · ${(x.lots*S.cv).toFixed(3)} BTC</span> <span class="chip a">LIVE</span></span></div><div class="cb">
  <div class="big">${x.id} is <span class="${m>=0?'pos':'neg'}">${R1(m)} ${m>=0?'in profit':'in loss'}</span></div>
  <div class="sub">if closed now ${R1(liq)} · ${x.lots} lot${x.lots>1?'s':''} · ${(m/S.capital*100).toFixed(2)}% of ₹20,000</div>
- <div style="margin-top:16px;font-weight:700">BTC safe zone ${fx(lo,0)} - ${fx(hi,0)}</div>
+ ${lo==null||hi==null?(()=>{const L0=o.legs[0]||{},call=L0.kind==='C',be=call?L0.strike+L0.entry_px:L0.strike-L0.entry_px,hu=(o.hedge&&o.hedge.hold_until||'').slice(11,16);
+ return`<div style="margin-top:16px;font-weight:700">Direction: <span class="${call?'pos':'neg'}">${call?'CALL - profits if BTC goes UP':'PUT - profits if BTC goes DOWN'}</span></div>
+ <div class="sub" style="margin-top:4px">Bought at BTC ${fx(o.spot_open,0)} · BTC now ${fx(sp,0)} (${sp>=o.spot_open?'+':''}${fx(sp-o.spot_open,0)} pts) · expiry breakeven ${fx(be,0)}${hu?` · exits at ${hu} IST`:''}</div>`})():`<div style="margin-top:16px;font-weight:700">BTC safe zone ${fx(lo,0)} - ${fx(hi,0)}</div>
  ${zoneBar(lo,hi,sp)}
- <div>${inside?`<span class="pos">✔ Inside the safe zone.</span> <b>${fx(sp-lo,0)}</b> points to the lower edge, <b>${fx(hi-sp,0)}</b> to the upper edge.`:`<span class="neg">⚠ Outside the safe zone</span> (${fx(sp<=lo?lo-sp:sp-hi,0)} pts ${sp<=lo?'below':'above'}).`}</div>
+ <div>${inside?`<span class="pos">✔ Inside the safe zone.</span> <b>${fx(sp-lo,0)}</b> points to the lower edge, <b>${fx(hi-sp,0)}</b> to the upper edge.`:`<span class="neg">⚠ Outside the safe zone</span> (${fx(sp<=lo?lo-sp:sp-hi,0)} pts ${sp<=lo?'below':'above'}).`}</div>`}
  <div class="grid k4" style="margin:14px 0">${tgt!=null?`<div class="card kpi"><div class="l">Target</div><div class="v num pos">${R1(tgt)}</div><div class="s">exit when reached</div></div>`:''}
  <div class="card kpi"><div class="l">Max loss</div><div class="v num neg">-₹1,000</div><div class="s">exit immediately if hit</div></div>
  <div class="card kpi"><div class="l">Time exit</div><div class="v num">${e.slice(0,2)}/${e.slice(2,4)} ${x.cfg.exit}</div><div class="s">if nothing else triggers</div></div>
- <div class="card kpi"><div class="l">Premium collected</div><div class="v num">${R1(toR(o.credit,x.lots))}</div><div class="s">maximum possible profit</div></div></div>
+ ${o.credit<0?`<div class="card kpi"><div class="l">Premium paid</div><div class="v num">₹${fx(Math.abs(toR(o.credit,x.lots)),1)}</div><div class="s">maximum possible loss</div></div>`:`<div class="card kpi"><div class="l">Premium collected</div><div class="v num">${R1(toR(o.credit,x.lots))}</div><div class="s">maximum possible profit</div></div>`}</div>
  <div style="font-weight:700">Our position</div>
  ${o.legs.map(L=>{const cur=L.status==='open'?L.last_mark:L.exit_px,v=L.qty<0?L.entry_px-cur:cur-L.entry_px,nm=`${fx(L.strike,0)} ${L.kind==='C'?'Call':'Put'}`;
  const d=L.qty<0?(cur>L.entry_px?'price up → loss for us':'price down → profit for us'):(cur>L.entry_px?'price up → profit':'price down → loss');
