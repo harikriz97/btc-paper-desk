@@ -126,9 +126,9 @@ async function live(){const el=$('v-live');const T=STRS();const opens=T.filter(x
  <div class="card kpi"><div class="l">BTC</div><div class="v num">${fx(S.spot,0)}</div><div class="s">${S.now} IST</div></div></div>
  <div class="card sec"><div class="cb help"><b>Epdi padikkanum:</b> naama options <b>vikkirom</b>. Vitha option vilai <b>kuraindhaa laabam</b>, <b>eriduchu na nashtam</b>.
  BTC <b style="color:var(--pos)">safe zone</b>-kulla irundha expiry-la laabam; thaandina nashtam aaga aarambikkum. Ovvoru strategy-kum ₹20,000 account, max ₹1,000/naal nashtam.</div></div>
- <div class="sec">${card(`Inniku plan · ${S.today}`,'ovvoru strategy-um ippo enna pannudhu',`<div class="scroll"><table><thead><tr><th>Neram</th><th>Strategy</th><th>Nilamai</th><th>Vivaram</th><th>₹</th></tr></thead><tbody>
+ <div class="sec">${card(`Inniku plan · ${S.today}`,'ovvoru strategy-um ippo enna pannudhu',`<div class="scroll"><table><thead><tr><th>Neram</th><th>Strategy</th><th>Lots</th><th>Nilamai</th><th>Vivaram</th><th>₹</th></tr></thead><tbody>
  ${[...T].sort((a,b)=>a.cfg.entry.localeCompare(b.cfg.entry)).map(x=>{const t=x.today_status||{};const lv=x.open?toR(x.open.eq_mark,x.lots):(t.pnl!=null?toR(t.pnl,x.lots):null);
- return`<tr><td class="num">${x.cfg.entry}</td><td><span class="sw" style="background:${C[x.i]}"></span><b>${x.id}</b> ${x.name}</td><td><span class="chip ${stc[t.state]||''}">${stTxt[t.state]||'-'}</span></td>
+ return`<tr><td class="num">${x.cfg.entry}</td><td><span class="sw" style="background:${C[x.i]}"></span><b>${x.id}</b> ${x.name}</td><td class="num"><b>${x.lots}</b></td><td><span class="chip ${stc[t.state]||''}">${stTxt[t.state]||'-'}</span></td>
  <td class="sub" style="text-align:left">${why(t.note)}</td><td class="num ${sg(lv)}">${lv!=null?R1(lv):'–'}</td></tr>`}).join('')}</tbody></table></div>`)}</div>
  ${opens.length?opens.map(x=>liveCard(x)).join(''):`<div class="card sec"><div class="empty">Ippo endha trade-um open-la illa.<br>Adutha entries: 08:00 (S1 S3 S5 S7 S9) · 11:00 (S2 S4 S8) · 18:00 (S6) IST</div></div>`}`;
  for(const x of opens){let tk=[];try{tk=await (await fetch(`data/ticks/${x.open.id}.json?ts=${Date.now()}`)).json()}catch(e){}
@@ -144,7 +144,7 @@ async function live(){const el=$('v-live');const T=STRS();const opens=T.filter(x
 function liveCard(x){const o=x.open,m=toR(o.eq_mark,x.lots),liq=toR(o.eq_liq,x.lots),lo=o.be_lo,hi=o.be_hi,sp=S.spot,inside=sp>lo&&sp<hi;
  const pad=(hi-lo)*.3,a=Math.min(lo-pad,sp-pad*.3),b=Math.max(hi+pad,sp+pad*.3),pos=v=>Math.max(1,Math.min(99,(v-a)/(b-a)*100));
  const tgt=o.target?toR(o.target,x.lots):null,e=o.expiry;
- return`<div class="card sec"><div class="ch"><h3><span class="sw" style="background:${C[x.i]}"></span>${x.id} · ${x.name}</h3><span class="chip a">LIVE</span></div><div class="cb">
+ return`<div class="card sec"><div class="ch"><h3><span class="sw" style="background:${C[x.i]}"></span>${x.id} · ${x.name}</h3><span><span class="chip" style="font-size:13px"><b>${x.lots} lots</b> · ${(x.lots*S.cv).toFixed(3)} BTC</span> <span class="chip a">LIVE</span></span></div><div class="cb">
  <div class="big">${x.id} ippo <span class="${m>=0?'pos':'neg'}">${R1(m)} ${m>=0?'laabam':'nashtam'}</span>-la irukku</div>
  <div class="sub">ippove close pannaa ${R1(liq)} · ${x.lots} lot${x.lots>1?'s':''} · ₹20,000-la ${(m/S.capital*100).toFixed(2)}%</div>
  <div style="margin-top:16px;font-weight:700">BTC safe zone</div>
@@ -158,7 +158,7 @@ function liveCard(x){const o=x.open,m=toR(o.eq_mark,x.lots),liq=toR(o.eq_liq,x.l
  <div style="font-weight:700">Namma position</div>
  ${o.legs.map(L=>{const cur=L.status==='open'?L.last_mark:L.exit_px,v=L.qty<0?L.entry_px-cur:cur-L.entry_px,nm=`${fx(L.strike,0)} ${L.kind==='C'?'Call':'Put'}`;
  const d=L.qty<0?(cur>L.entry_px?'vilai eriduchu → nashtam':'vilai kuraindhudhu → laabam'):(cur>L.entry_px?'vilai eriduchu → laabam':'vilai kuraindhudhu → nashtam');
- return`<div class="leg"><span>${L.qty<0?'<span class="chip n">VITHOM</span>':'<span class="chip p">VAANGINOM</span>'} <b>${nm}</b> <span class="sub">${fx(L.entry_px)} → ${fx(cur)} · ${d}${L.status!=='open'?' · '+L.status:''}</span></span><b class="num ${sg(v)}">${rs(v,x.lots)}</b></div>`}).join('')}
+ return`<div class="leg"><span>${L.qty<0?'<span class="chip n">VITHOM</span>':'<span class="chip p">VAANGINOM</span>'} <b>${nm}</b> <span class="chip">${x.lots} lots</span> <span class="sub">${fx(L.entry_px)} → ${fx(cur)} · ${d}${L.status!=='open'?' · '+L.status:''}</span></span><b class="num ${sg(v)}">${rs(v,x.lots)}</b></div>`}).join('')}
  <div class="grid c2" style="margin-top:14px"><div class="chart sm"><canvas id="lv1_${x.id}"></canvas></div><div class="chart sm"><canvas id="lv3_${x.id}"></canvas></div></div>
  <details style="margin-top:10px"><summary class="sub" style="cursor:pointer">Full rules</summary>${x.rules.map(r=>`<div class="sub" style="padding:3px 0">• ${r}</div>`).join('')}</details></div></div>`}
 /* ------------------------------------------------------------ OVERVIEW */
@@ -230,11 +230,11 @@ function strategies(){const el=$('v-strategies');const T=STRS();
 function trades(){const el=$('v-trades');const T=STRS();const rows=T.flatMap(x=>x.trades.map(t=>({...t,x}))).filter(t=>tsel==='ALL'||t.x.id===tsel).sort((a,b)=>b.id-a.id);
  const imgs=rows.filter(t=>t.chart).slice(0,24);
  el.innerHTML=`<div class="filters" style="margin-bottom:12px">${['ALL',...T.map(x=>x.id)].map(k=>`<button class="${k===tsel?'on':''}" onclick="tsel='${k}';draw()">${k}</button>`).join('')}</div>
- ${card('Closed trades',`${rows.length} trades`,`<div class="scroll"><table><thead><tr><th>Strategy</th><th>Day</th><th>Open</th><th>Close</th><th>BTC</th><th>Legs · in → out</th><th>Exit</th><th>Fees ₹</th><th>P&L ₹</th><th>Chart</th></tr></thead><tbody>
- ${rows.map(t=>`<tr><td><span class="sw" style="background:${C[t.x.i]}"></span>${t.x.id}</td><td>${t.day}</td><td class="num">${t.opened_at.slice(11,16)}</td><td class="num">${(t.closed_at||'').slice(11,16)}</td>
+ ${card('Closed trades',`${rows.length} trades`,`<div class="scroll"><table><thead><tr><th>Strategy</th><th>Day</th><th>Lots</th><th>Open</th><th>Close</th><th>BTC</th><th>Legs · in → out</th><th>Exit</th><th>Fees ₹</th><th>P&L ₹</th><th>Chart</th></tr></thead><tbody>
+ ${rows.map(t=>`<tr><td><span class="sw" style="background:${C[t.x.i]}"></span>${t.x.id}</td><td>${t.day}</td><td class="num">${t.x.lots}</td><td class="num">${t.opened_at.slice(11,16)}</td><td class="num">${(t.closed_at||'').slice(11,16)}</td>
  <td class="num">${fx(t.spot_open,0)}</td><td style="text-align:left" class="mono">${t.legs.map(L=>`${L.qty<0?'S':'B'} ${L.symbol} ${fx(L.entry_px)} → ${fx(L.exit_px)}`).join('<br>')}</td>
  <td><span class="chip">${t.exit_reason}</span></td><td class="num">${rs(t.fees,t.x.lots)}</td><td class="num ${sg(t.pnl)}"><b>${rs(t.pnl,t.x.lots)}</b></td>
- <td>${t.chart?`<a href="charts/${t.chart}" target="_blank">view</a>`:'–'}</td></tr>`).join('')||'<tr><td colspan="10" class="empty">Innum closed trades illa</td></tr>'}</tbody></table></div>`)}
+ <td>${t.chart?`<a href="charts/${t.chart}" target="_blank">view</a>`:'–'}</td></tr>`).join('')||'<tr><td colspan="11" class="empty">Innum closed trades illa</td></tr>'}</tbody></table></div>`)}
  <div class="sec">${card('Trade stories','every closed trade as a picture · tap to open',imgs.length?`<div class="gal">${imgs.map(t=>`<a href="charts/${t.chart}" target="_blank"><img loading="lazy" src="charts/${t.chart}" alt="${t.x.id} ${t.day}"><div class="cap"><span>${t.x.id} · ${t.day}</span><b class="${sg(t.pnl)}">${rs(t.pnl,t.x.lots)}</b></div></a>`).join('')}</div>`:'<div class="empty">Trade mudinjadhum images inga varum</div>')}</div>`}
 /* ------------------------------------------------------------ COSTS */
 function costs(){const el=$('v-costs');const T=STRS().filter(x=>x.spread_pct!=null);
