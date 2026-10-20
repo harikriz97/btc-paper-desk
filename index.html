@@ -57,7 +57,7 @@ td{padding:11px 12px;border-bottom:1px solid var(--line);text-align:right;white-
 .leg{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line)}
 .big{font-size:24px;font-weight:800;letter-spacing:-.4px}.help{font-size:13.5px;line-height:1.7;color:var(--ink2)}.help b{color:var(--ink)}
 .stc{display:flex;flex-direction:column;gap:10px}.stc .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.mini div{background:rgba(148,163,184,.07);border-radius:10px;padding:8px 10px}.mini .l{font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px}.mini .v{font-weight:700;margin-top:2px}
+.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.mini>div{background:rgba(148,163,184,.07);border-radius:10px;padding:8px 10px}.mini .l{font-size:10.5px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px}.mini .v{font-weight:700;margin-top:2px}
 .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}.gal a{display:block;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--card2)}.gal img{width:100%;display:block}.gal .cap{padding:8px 10px;font-size:12px;display:flex;justify-content:space-between}
 .ev{display:grid;grid-template-columns:160px 54px 76px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:12.5px}.ev pre{margin:0;white-space:pre-wrap;font:12px "JetBrains Mono",monospace;color:var(--ink2)}
 .filters{display:flex;gap:6px;flex-wrap:wrap}.filters button{background:rgba(148,163,184,.08);border:1px solid var(--line);color:var(--ink2);padding:5px 11px;border-radius:9px;cursor:pointer;font:inherit;font-size:12px;font-weight:600}.filters button.on{background:var(--acc);border-color:var(--acc);color:#fff}
@@ -117,7 +117,7 @@ tr.go{cursor:pointer}tr.go:hover{background:rgba(99,102,241,.08)}
 <script>
 const C=['#6366f1','#f97316','#14b8a6','#eab308','#ec4899','#a78bfa','#22c55e','#06b6d4','#f43f5e'];
 let S=null,R=null,tab='live',charts={},tsel='ALL',eqMode='rs';
-try{tab=localStorage.getItem('tab2')||'live';const th=localStorage.getItem('theme');if(th)document.documentElement.dataset.theme=th}catch(e){}
+try{tab=localStorage.getItem('tab2')||'live';if(location.hash.length>1)tab=location.hash.slice(1);const th=localStorage.getItem('theme');if(th)document.documentElement.dataset.theme=th}catch(e){}
 const $=id=>document.getElementById(id);
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const fx=(v,d=1)=>v==null||isNaN(v)?'–':Number(v).toLocaleString('en-IN',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -127,6 +127,7 @@ const sgn=(v,d=1)=>v==null?'–':(v>0?'+':'')+fx(v,d);
 const toR=(v,l)=>v*S.cv*l*S.fx;
 const R1=v=>{if(v==null)return'–';const a=Math.abs(v);return(v<0?'-₹':v>0?'+₹':'₹')+(a<100?a.toFixed(1):fx(a,0))};
 const rs=(v,l)=>v==null?'–':R1(toR(v,l));
+const fee=(v,l)=>v==null?'–':'₹'+(Math.abs(toR(v,l))<100?Math.abs(toR(v,l)).toFixed(1):fx(Math.abs(toR(v,l)),0));
 const TABS=[['live','Live'],['overview','Overview'],['strategies','Strategies'],['trades','Trades'],['costs','Costs'],['research','Research'],['events','Events']];
 function base(o={}){const g=css('--line'),k=css('--ink2');return{animation:false,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
  plugins:{legend:{labels:{color:k,boxWidth:10,boxHeight:10,usePointStyle:true,font:{size:11}}},tooltip:{backgroundColor:'rgba(15,23,42,.95)',padding:10,cornerRadius:8}},
@@ -136,7 +137,7 @@ function card(title,sub,body,extra=''){return`<div class="card ${extra}"><div cl
 const STRS=()=>S.strategies.map((x,i)=>({...x,i}));
 function tabsBar(){$('tabs').innerHTML=TABS.map(([k,l])=>`<button class="${k===tab?'on':''}" onclick="go('${k}')">${l}${k==='live'&&S?` <span class="chip a">${S.strategies.filter(x=>x.open).length}</span>`:''}</button>`).join('');
  TABS.forEach(([k])=>$('v-'+k).hidden=k!==tab)}
-function go(k){tab=k;try{localStorage.setItem('tab2',k)}catch(e){};draw()}
+function go(k){tab=k;try{localStorage.setItem('tab2',k);history.replaceState(null,'','#'+k)}catch(e){};draw()}
 $('theme').onclick=()=>{const cur=document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');const nx=cur==='light'?'dark':'light';
  document.documentElement.dataset.theme=nx;try{localStorage.setItem('theme',nx)}catch(e){};draw()};
 function head(){$('spot').textContent='BTC '+fx(S.spot,0);const age=S.generated_at?Math.max(0,Date.now()/1000-S.generated_at):0;
@@ -146,32 +147,32 @@ function head(){$('spot').textContent='BTC '+fx(S.spot,0);const age=S.generated_
  $('dlab').textContent=S.day<1?`Starts ${S.start}`:`Day ${S.day} / ${S.days}`;$('dbar').style.width=Math.min(100,Math.max(0,S.day/S.days*100))+'%'}
 /* ------------------------------------------------------------ LIVE */
 async function live(){const el=$('v-live');const T=STRS();const opens=T.filter(x=>x.open);
- const stc={OPEN:'open',DONE:'done',SKIPPED:'skip',WAITING:''},stTxt={OPEN:'Trade odudhu',DONE:'Mudinjiduchu',SKIPPED:'Inniku illa',WAITING:'Wait'};
- const why=n=>!n?'':n.startsWith('engine offline')?'Entry neram-la engine off':n.startsWith('premium')?'Premium kammi - filter skip':n.startsWith('entry at')?'Entry '+n.split('at ')[1]:n.startsWith('next entry')?'Naalai '+n.split('tomorrow ')[1]:n.startsWith('since')?n.replace('since','')+' mudhal':n;
+ const stc={OPEN:'open',DONE:'done',SKIPPED:'skip',WAITING:''},stTxt={OPEN:'Open',DONE:'Closed',SKIPPED:'Skipped today',WAITING:'Waiting'};
+ const why=n=>!n?'':n.startsWith('engine offline')?'Engine was offline at entry time':n.startsWith('premium')?'Premium too low - filter skipped the day':n.startsWith('entry at')?'Entry at '+n.split('at ')[1]:n.startsWith('next entry')?'Next entry tomorrow '+n.split('tomorrow ')[1]:n.startsWith('since')?'Open since'+n.replace('since',''):n;
  const tot=T.reduce((a,x)=>a+toR(x.total,x.lots),0),td=T.reduce((a,x)=>a+toR(x.today,x.lots),0),om=opens.reduce((a,x)=>a+toR(x.open.eq_mark,x.lots),0);
  const cap=S.capital*T.length,roi=v=>`<span class="roi ${sg(v)}">${v>0?'+':''}${(v/cap*100).toFixed(2)}%</span>`;
  const kv=v=>`<div class="vrow"><div class="v num ${sg(v)}">${R1(v)}</div>${roi(v)}</div>`;
  el.innerHTML=`<div class="grid k4">
- <div class="card kpi hero"><div class="l">Inniku (closed + open)</div>${kv(td+om)}<div class="s">${opens.length} trade${opens.length===1?'':'s'} open ippo</div></div>
- <div class="card kpi"><div class="l">Open trades MTM</div>${kv(om)}<div class="s">ippove close pannaa approx</div></div>
+ <div class="card kpi hero"><div class="l">Today (closed + open)</div>${kv(td+om)}<div class="s">${opens.length} trade${opens.length===1?'':'s'} open now</div></div>
+ <div class="card kpi"><div class="l">Open trades MTM</div>${kv(om)}<div class="s">approx. if all closed now</div></div>
  <div class="card kpi"><div class="l">Closed paper P&L (realized)</div>${kv(tot)}<div class="s">${T.length} accounts × ₹${fx(S.capital,0)}</div></div>
  <div class="card kpi"><div class="l">BTC</div><div class="v num">${fx(S.spot,0)}</div><div class="s">${S.now} IST</div></div></div>
- <div class="card sec"><div class="cb help"><b>Epdi padikkanum:</b> naama options <b>vikkirom</b>. Vitha option vilai <b>kuraindhaa laabam</b>, <b>eriduchu na nashtam</b>.
- BTC <b style="color:var(--pos)">safe zone</b>-kulla irundha expiry-la laabam; thaandina nashtam aaga aarambikkum. Ovvoru strategy-kum ₹20,000 account, max ₹1,000/naal nashtam.</div></div>
- <div class="sec">${card(`Inniku plan · ${S.today}`,'ovvoru strategy-um ippo enna pannudhu',`<div class="scroll"><table><thead><tr><th>Neram</th><th>Strategy</th><th>Lots</th><th>Nilamai</th><th>Vivaram</th><th>₹</th></tr></thead><tbody>
+ <div class="card sec"><div class="cb help"><b>How to read this:</b> we <b>sell</b> options. If the option price <b>falls we profit</b>, if it <b>rises we lose</b>.
+ If BTC stays inside the <b style="color:var(--pos)">safe zone</b> until expiry the trade makes money; outside it, losses start. Each strategy has its own ₹20,000 paper account with a ₹1,000/day loss limit.</div></div>
+ <div class="sec">${card(`Today's plan · ${S.today}`,'what each strategy is doing right now',`<div class="scroll"><table><thead><tr><th>Time</th><th>Strategy</th><th>Lots</th><th>Status</th><th>Detail</th><th>₹</th></tr></thead><tbody>
  ${[...T].sort((a,b)=>a.cfg.entry.localeCompare(b.cfg.entry)).map(x=>{const t=x.today_status||{};const lv=x.open?toR(x.open.eq_mark,x.lots):(t.pnl!=null?toR(t.pnl,x.lots):null);
- return`<tr ${x.open?`class="go" onclick="toCard('${x.id}')"`:`title="Live card illa"`}><td class="num">${x.cfg.entry}</td><td><span class="sw" style="background:${C[x.i]}"></span><b>${x.id}</b> ${x.name}</td><td class="num"><b>${x.lots}</b></td><td><span class="st ${stc[t.state]||''}">${stTxt[t.state]||'-'}</span></td>
+ return`<tr ${x.open?`class="go" onclick="toCard('${x.id}')"`:`title="No live card"`}><td class="num">${x.cfg.entry}</td><td><span class="sw" style="background:${C[x.i]}"></span><b>${x.id}</b> ${x.name}</td><td class="num"><b>${x.lots}</b></td><td><span class="st ${stc[t.state]||''}">${stTxt[t.state]||'-'}</span></td>
  <td class="sub" style="text-align:left">${why(t.note)}</td><td class="num pl ${sg(lv)}">${lv!=null?R1(lv):'–'}</td></tr>`}).join('')}</tbody></table></div>`)}</div>
- ${opens.length?`<div class="lgrid">${opens.map(x=>liveCard(x)).join('')}</div>`:`<div class="card sec"><div class="empty">Ippo endha trade-um open-la illa.<br>Adutha entries: 08:00 (S1 S3 S5 S7 S9) · 11:00 (S2 S4 S8) · 18:00 (S6) IST</div></div>`}`;
+ ${opens.length?`<div class="lgrid">${opens.map(x=>liveCard(x)).join('')}</div>`:`<div class="card sec"><div class="empty">No trades open right now.<br>Next entries: 08:00 (S1 S3 S5 S7 S9) · 11:00 (S2 S4 S8) · 18:00 (S6) IST</div></div>`}`;
  for(const x of opens){let tk=[];try{tk=await (await fetch(`data/ticks/${x.open.id}.json?ts=${Date.now()}`)).json()}catch(e){}
   if(!tk.length||tab!=='live')continue;const lab=tk.map(t=>t.t.slice(11,16)),flat=v=>tk.map(()=>v),o=x.open;
   const d1=[{label:'BTC',data:tk.map(t=>t.spot),borderColor:C[0],borderWidth:2.5,pointRadius:0,tension:.2}];
   if(o.be_lo){d1.push({label:'Safe zone',data:flat(o.be_hi),borderColor:'rgba(34,197,94,.6)',backgroundColor:'rgba(34,197,94,.10)',fill:'+1',borderWidth:1,borderDash:[5,4],pointRadius:0});
    d1.push({label:'',data:flat(o.be_lo),borderColor:'rgba(34,197,94,.6)',borderWidth:1,borderDash:[5,4],pointRadius:0})}
   const pr=tk.map(t=>toR(t.pnl,x.lots)),up=pr[pr.length-1]>=0;
-  const o1=base();o1.plugins.legend.labels.filter=i=>i.text!=='';o1.plugins.title={display:true,text:'BTC vilai vs safe zone',color:css('--ink2'),align:'start'};o1.scales.y.ticks.callback=v=>fx(v,0);
+  const o1=base();o1.plugins.legend.labels.filter=i=>i.text!=='';o1.plugins.title={display:true,text:'BTC price vs safe zone',color:css('--ink2'),align:'start'};o1.scales.y.ticks.callback=v=>fx(v,0);
   mk('lv1_'+x.id,{type:'line',data:{labels:lab,datasets:d1},options:o1});
-  const o3=base();o3.plugins.legend.display=false;o3.plugins.title={display:true,text:'Laabam / nashtam ₹',color:css('--ink2'),align:'start'};o3.scales.y.ticks.callback=v=>'₹'+(Math.abs(v)<10?v.toFixed(1):fx(v,0));
+  const o3=base();o3.plugins.legend.display=false;o3.plugins.title={display:true,text:'Profit / loss ₹',color:css('--ink2'),align:'start'};o3.scales.y.ticks.callback=v=>'₹'+(Math.abs(v)<10?v.toFixed(1):fx(v,0));
   mk('lv3_'+x.id,{type:'line',data:{labels:lab,datasets:[{data:pr,borderColor:up?'#22c55e':'#f43f5e',backgroundColor:up?'rgba(34,197,94,.15)':'rgba(244,63,94,.15)',fill:'origin',borderWidth:2.5,pointRadius:0,tension:.2}]},options:o3})}}
 function toCard(id){const c=$('lc_'+id);if(!c)return;c.scrollIntoView({behavior:'smooth',block:'center'});c.classList.add('flash');clearTimeout(c._f);c._f=setTimeout(()=>c.classList.remove('flash'),1500)}
 function zoneBar(lo,hi,sp){const raw=(sp-lo)/(hi-lo)*100,p=Math.max(0,Math.min(100,raw)),st=raw<=0||raw>=100?'bad':raw<10||raw>90?'warn':'';
@@ -179,19 +180,19 @@ function zoneBar(lo,hi,sp){const raw=(sp-lo)/(hi-lo)*100,p=Math.max(0,Math.min(1
 function liveCard(x){const o=x.open,m=toR(o.eq_mark,x.lots),liq=toR(o.eq_liq,x.lots),lo=o.be_lo,hi=o.be_hi,sp=S.spot,inside=sp>lo&&sp<hi;
  const tgt=o.target?toR(o.target,x.lots):null,e=o.expiry;
  return`<div class="card sec" id="lc_${x.id}"><div class="ch"><h3><span class="sw" style="background:${C[x.i]}"></span>${x.id} · ${x.name}</h3><span><span class="chip" style="font-size:13px"><b>${x.lots} lots</b> · ${(x.lots*S.cv).toFixed(3)} BTC</span> <span class="chip a">LIVE</span></span></div><div class="cb">
- <div class="big">${x.id} ippo <span class="${m>=0?'pos':'neg'}">${R1(m)} ${m>=0?'laabam':'nashtam'}</span>-la irukku</div>
- <div class="sub">ippove close pannaa ${R1(liq)} · ${x.lots} lot${x.lots>1?'s':''} · ₹20,000-la ${(m/S.capital*100).toFixed(2)}%</div>
+ <div class="big">${x.id} is <span class="${m>=0?'pos':'neg'}">${R1(m)} ${m>=0?'in profit':'in loss'}</span></div>
+ <div class="sub">if closed now ${R1(liq)} · ${x.lots} lot${x.lots>1?'s':''} · ${(m/S.capital*100).toFixed(2)}% of ₹20,000</div>
  <div style="margin-top:16px;font-weight:700">BTC safe zone ${fx(lo,0)} - ${fx(hi,0)}</div>
  ${zoneBar(lo,hi,sp)}
- <div>${inside?`<span class="pos">✔ Safe zone-kulla.</span> Keezh ellai-ku <b>${fx(sp-lo,0)}</b>, mel ellai-ku <b>${fx(hi-sp,0)}</b> points dooram.`:`<span class="neg">⚠ Safe zone-ah thaandiduchu</span> (${sp<=lo?'keezha':'mela'} ${fx(sp<=lo?lo-sp:sp-hi,0)} pts).`}</div>
- <div class="grid k4" style="margin:14px 0">${tgt!=null?`<div class="card kpi"><div class="l">Target</div><div class="v num pos">${R1(tgt)}</div><div class="s">idhu vandhaa exit</div></div>`:''}
- <div class="card kpi"><div class="l">Max nashtam</div><div class="v num neg">-₹1,000</div><div class="s">thottaa udane exit</div></div>
- <div class="card kpi"><div class="l">Time exit</div><div class="v num">${e.slice(0,2)}/${e.slice(2,4)} ${x.cfg.exit}</div><div class="s">edhuvum hit aagalana</div></div>
- <div class="card kpi"><div class="l">Vaangina premium</div><div class="v num">${R1(toR(o.credit,x.lots))}</div><div class="s">max laabam</div></div></div>
- <div style="font-weight:700">Namma position</div>
+ <div>${inside?`<span class="pos">✔ Inside the safe zone.</span> <b>${fx(sp-lo,0)}</b> points to the lower edge, <b>${fx(hi-sp,0)}</b> to the upper edge.`:`<span class="neg">⚠ Outside the safe zone</span> (${fx(sp<=lo?lo-sp:sp-hi,0)} pts ${sp<=lo?'below':'above'}).`}</div>
+ <div class="grid k4" style="margin:14px 0">${tgt!=null?`<div class="card kpi"><div class="l">Target</div><div class="v num pos">${R1(tgt)}</div><div class="s">exit when reached</div></div>`:''}
+ <div class="card kpi"><div class="l">Max loss</div><div class="v num neg">-₹1,000</div><div class="s">exit immediately if hit</div></div>
+ <div class="card kpi"><div class="l">Time exit</div><div class="v num">${e.slice(0,2)}/${e.slice(2,4)} ${x.cfg.exit}</div><div class="s">if nothing else triggers</div></div>
+ <div class="card kpi"><div class="l">Premium collected</div><div class="v num">${R1(toR(o.credit,x.lots))}</div><div class="s">maximum possible profit</div></div></div>
+ <div style="font-weight:700">Our position</div>
  ${o.legs.map(L=>{const cur=L.status==='open'?L.last_mark:L.exit_px,v=L.qty<0?L.entry_px-cur:cur-L.entry_px,nm=`${fx(L.strike,0)} ${L.kind==='C'?'Call':'Put'}`;
- const d=L.qty<0?(cur>L.entry_px?'vilai eriduchu → nashtam':'vilai kuraindhudhu → laabam'):(cur>L.entry_px?'vilai eriduchu → laabam':'vilai kuraindhudhu → nashtam');
- return`<div class="leg"><span>${L.qty<0?'<span class="chip n">VITHOM</span>':'<span class="chip p">VAANGINOM</span>'} <b>${nm}</b> <span class="chip">${x.lots} lots</span> <span class="sub">${fx(L.entry_px)} → ${fx(cur)} · ${d}${L.status!=='open'?' · '+L.status:''}</span></span><b class="num ${sg(v)}">${rs(v,x.lots)}</b></div>`}).join('')}
+ const d=L.qty<0?(cur>L.entry_px?'price up → loss for us':'price down → profit for us'):(cur>L.entry_px?'price up → profit':'price down → loss');
+ return`<div class="leg"><span>${L.qty<0?'<span class="chip n">SOLD</span>':'<span class="chip p">BOUGHT</span>'} <b>${nm}</b> <span class="chip">${x.lots} lots</span> <span class="sub">${fx(L.entry_px)} → ${fx(cur)} · ${d}${L.status!=='open'?' · '+L.status:''}</span></span><b class="num ${sg(v)}">${rs(v,x.lots)}</b></div>`}).join('')}
  <div class="grid c2" style="margin-top:14px"><div class="chart sm"><canvas id="lv1_${x.id}"></canvas></div><div class="chart sm"><canvas id="lv3_${x.id}"></canvas></div></div>
  <details class="rules"><summary>Strategy Rules</summary>${x.rules.map(r=>`<div class="sub" style="padding:3px 0">• ${r}</div>`).join('')}</details></div></div>`}
 /* ------------------------------------------------------------ OVERVIEW */
@@ -203,7 +204,7 @@ function overview(){const el=$('v-overview');const T=STRS();
  <div class="card kpi hero"><div class="l">Combined paper P&L</div><div class="v num ${sg(tot)}">${R1(tot)}</div><div class="s">${(tot/(S.capital*T.length)*100).toFixed(2)}% on ${T.length} × ₹${fx(S.capital,0)}</div></div>
  <div class="card kpi"><div class="l">Leader</div><div class="v">${best?best.id:'–'}</div><div class="s">${best?`${best.name.slice(0,30)} · ${rs(best.total,best.lots)}`:'first trades pending'}</div></div>
  <div class="card kpi"><div class="l">Closed trades</div><div class="v num">${n}</div><div class="s">win rate ${n?pc(w/n):'–'}</div></div>
- <div class="card kpi"><div class="l">Fees paid</div><div class="v num">${R1(T.reduce((a,x)=>a+toR(x.fees,x.lots),0))}</div><div class="s">incl. 18% GST</div></div></div>
+ <div class="card kpi"><div class="l">Fees paid</div><div class="v num">₹${fx(T.reduce((a,x)=>a+toR(x.fees,x.lots),0),1)}</div><div class="s">incl. 18% GST</div></div></div>
  <div class="grid c21 sec">${card('Equity curve','₹ per account · realized + open',`<div class="filters" style="margin-bottom:8px">${[['rs','₹'],['pct','% return']].map(([k,l])=>`<button class="${eqMode===k?'on':''}" onclick="eqMode='${k}';draw()">${l}</button>`).join('')}</div><div class="chart"><canvas id="ov_eq"></canvas></div>`)}
  ${card('Return by strategy','% of ₹20,000',`<div class="chart"><canvas id="ov_ret"></canvas></div>`)}</div>
  <div class="grid c2 sec">${card('Daily P&L','₹ per day · stacked by strategy',`<div class="chart sm"><canvas id="ov_daily"></canvas></div>`)}
@@ -214,7 +215,7 @@ function overview(){const el=$('v-overview');const T=STRS();
  <div class="sec">${card('Leaderboard',`ranked by ₹ · each = own ₹${fx(S.capital,0)} account`,`<div class="scroll"><table><thead><tr><th>#</th><th>Strategy</th><th>Lots</th><th>P&L ₹</th><th>Return</th><th>Balance</th><th>Trades</th><th>Win</th><th>Worst ₹</th><th>Max DD ₹</th><th>Live avg</th><th>Backtest avg</th></tr></thead><tbody>
  ${[...T].sort((a,b)=>toR(b.total,b.lots)-toR(a.total,a.lots)).map((x,r)=>`<tr><td class="mut">${r+1}</td><td><span class="sw" style="background:${C[x.i]}"></span><b>${x.id}</b> ${x.name}</td><td class="num">${x.lots}</td>
  <td class="num ${sg(x.total)}">${rs(x.total,x.lots)}</td><td class="num ${sg(x.total)}">${(toR(x.total,x.lots)/S.capital*100).toFixed(2)}%</td><td class="num">₹${fx(S.capital+toR(x.total,x.lots),0)}</td>
- <td class="num">${x.n}</td><td class="num">${pc(x.win)}</td><td class="num neg">${x.worst!=null?rs(x.worst,x.lots):'–'}</td><td class="num neg">${rs(x.dd,x.lots)}</td>
+ <td class="num">${x.n}</td><td class="num">${pc(x.win)}</td><td class="num ${sg(x.worst)}">${x.worst!=null?rs(x.worst,x.lots):'–'}</td><td class="num neg">${rs(x.dd,x.lots)}</td>
  <td class="num ${sg(x.avg)}">${sgn(x.avg)} pts</td><td class="num ${sg(x.bt.avg)}">${sgn(x.bt.avg)} pts</td></tr>`).join('')}</tbody></table></div>`)}</div>
  <div class="sec">${card('30-day heatmap','green = profit day, red = loss day',`<div class="scroll"><div class="heat" id="heat"></div></div>`)}</div>`;
  // equity
@@ -251,12 +252,12 @@ function strategies(){const el=$('v-strategies');const T=STRS();
  el.innerHTML=`<div class="grid c3">${T.map(x=>{const t=x.today_status||{},r=toR(x.total,x.lots);return`<div class="card"><div class="cb stc">
  <div class="top"><div><div style="font-weight:800"><span class="sw" style="background:${C[x.i]}"></span>${x.id}</div><div class="sub">${x.name}</div></div>
  <div style="text-align:right"><div class="num ${sg(r)}" style="font-size:20px;font-weight:800">${R1(r)}</div><div class="sub">${(r/S.capital*100).toFixed(2)}%</div></div></div>
- <canvas id="sp_${x.id}" height="46"></canvas>
+ ${x.n?`<div style="position:relative;height:56px"><canvas id="sp_${x.id}"></canvas></div>`:`<div class="sub" style="height:56px;display:grid;place-items:center;border:1px dashed var(--line);border-radius:10px">No closed trades yet</div>`}
  <div class="mini"><div><div class="l">Trades</div><div class="v num">${x.n}</div></div><div><div class="l">Win</div><div class="v num">${pc(x.win)}</div></div><div><div class="l">Lots</div><div class="v num">${x.lots}</div></div>
- <div><div class="l">Worst</div><div class="v num neg">${x.worst!=null?rs(x.worst,x.lots):'–'}</div></div><div><div class="l">Max DD</div><div class="v num neg">${rs(x.dd,x.lots)}</div></div><div><div class="l">Today</div><div class="v"><span class="chip ${t.state==='OPEN'?'a':t.state==='DONE'?'p':t.state==='SKIPPED'?'n':''}">${t.state||'-'}</span></div></div></div>
+ <div><div class="l">Worst</div><div class="v num ${sg(x.worst)}">${x.worst!=null?rs(x.worst,x.lots):'–'}</div></div><div><div class="l">Max DD</div><div class="v num neg">${rs(x.dd,x.lots)}</div></div><div><div class="l">Today</div><div class="v"><span class="chip ${t.state==='OPEN'?'a':t.state==='DONE'?'p':t.state==='SKIPPED'?'n':''}">${t.state||'-'}</span></div></div></div>
  <div>${x.rules.map(q=>`<div class="sub" style="padding:2px 0">• ${q}</div>`).join('')}</div>
  <div class="sub" style="border-top:1px solid var(--line);padding-top:8px">Backtest (Jul 25–Oct 26): avg ${sgn(x.bt.avg)} pts/trade · win ${pc(x.bt.win)} · ${x.bt.note}</div></div></div>`}).join('')}</div>`;
- T.forEach(x=>{let c=0;const d=[0,...x.trades.slice().reverse().map(t=>c+=toR(t.pnl,x.lots))];
+ T.filter(x=>x.n).forEach(x=>{let c=0;const d=[0,...x.trades.slice().reverse().map(t=>c+=toR(t.pnl,x.lots))];
   mk('sp_'+x.id,{type:'line',data:{labels:d.map((_,i)=>i),datasets:[{data:d,borderColor:C[x.i],backgroundColor:C[x.i]+'26',fill:true,borderWidth:2,pointRadius:0,tension:.25}]},
   options:{animation:false,responsive:true,maintainAspectRatio:false,events:[],plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}}}})})}
 /* ------------------------------------------------------------ TRADES */
@@ -266,21 +267,21 @@ function trades(){const el=$('v-trades');const T=STRS();const rows=T.flatMap(x=>
  ${card('Closed trades',`${rows.length} trades`,`<div class="scroll"><table><thead><tr><th>Strategy</th><th>Day</th><th>Lots</th><th>Open</th><th>Close</th><th>BTC</th><th>Legs · in → out</th><th>Exit</th><th>Fees ₹</th><th>P&L ₹</th><th>Chart</th></tr></thead><tbody>
  ${rows.map(t=>`<tr><td><span class="sw" style="background:${C[t.x.i]}"></span>${t.x.id}</td><td>${t.day}</td><td class="num">${t.x.lots}</td><td class="num">${t.opened_at.slice(11,16)}</td><td class="num">${(t.closed_at||'').slice(11,16)}</td>
  <td class="num">${fx(t.spot_open,0)}</td><td style="text-align:left" class="mono">${t.legs.map(L=>`${L.qty<0?'S':'B'} ${L.symbol} ${fx(L.entry_px)} → ${fx(L.exit_px)}`).join('<br>')}</td>
- <td><span class="chip">${t.exit_reason}</span></td><td class="num">${rs(t.fees,t.x.lots)}</td><td class="num ${sg(t.pnl)}"><b>${rs(t.pnl,t.x.lots)}</b></td>
- <td>${t.chart?`<a href="charts/${t.chart}" target="_blank">view</a>`:'–'}</td></tr>`).join('')||'<tr><td colspan="11" class="empty">Innum closed trades illa</td></tr>'}</tbody></table></div>`)}
- <div class="sec">${card('Trade stories','every closed trade as a picture · tap to open',imgs.length?`<div class="gal">${imgs.map(t=>`<a href="charts/${t.chart}" target="_blank"><img loading="lazy" src="charts/${t.chart}" alt="${t.x.id} ${t.day}"><div class="cap"><span>${t.x.id} · ${t.day}</span><b class="${sg(t.pnl)}">${rs(t.pnl,t.x.lots)}</b></div></a>`).join('')}</div>`:'<div class="empty">Trade mudinjadhum images inga varum</div>')}</div>`}
+ <td><span class="chip">${t.exit_reason}</span></td><td class="num">${fee(t.fees,t.x.lots)}</td><td class="num ${sg(t.pnl)}"><b>${rs(t.pnl,t.x.lots)}</b></td>
+ <td>${t.chart?`<a href="charts/${t.chart}" target="_blank">view</a>`:'–'}</td></tr>`).join('')||'<tr><td colspan="11" class="empty">No closed trades yet</td></tr>'}</tbody></table></div>`)}
+ <div class="sec">${card('Trade stories','every closed trade as a picture · tap to open',imgs.length?`<div class="gal">${imgs.map(t=>`<a href="charts/${t.chart}" target="_blank"><img loading="lazy" src="charts/${t.chart}" alt="${t.x.id} ${t.day}"><div class="cap"><span>${t.x.id} · ${t.day}</span><b class="${sg(t.pnl)}">${rs(t.pnl,t.x.lots)}</b></div></a>`).join('')}</div>`:'<div class="empty">A chart of every trade appears here after it closes</div>')}</div>`}
 /* ------------------------------------------------------------ COSTS */
-function costs(){const el=$('v-costs');const T=STRS().filter(x=>x.spread_pct!=null);
- el.innerHTML=`<div class="card"><div class="cb help"><b>Idhu yen mukkiyam:</b> backtest-la ovvoru fill-kum <b>2% + $0.5</b> slippage assume pannom. Live bid/ask-la unmaiyaana cost evlo nu inga theriyum.
- Real cost kammiya irundha strategies backtest-ah vida nalla perform pannum.</div></div>
+function costs(){const el=$('v-costs');const T=STRS().filter(x=>x.spread_pct!=null).map(x=>{const mk=x.slip_pct?x.slip_pts/x.slip_pct:null;return{...x,mk,btPts:mk?0.02*mk+0.5:null,btPct:mk?0.02+0.5/mk:null}});
+ el.innerHTML=`<div class="card"><div class="cb help"><b>Why this matters:</b> the backtest assumed <b>2% + $0.5</b> slippage on every fill. This tab shows the real cost at the live bid/ask.
+ If the real cost is lower, strategies should do better than the backtest.</div></div>
  <div class="grid c2 sec">${card('Quoted spread at entry','(ask − bid) ÷ mark',`<div class="chart sm"><canvas id="co_sp"></canvas></div>`)}
  ${card('Fill cost vs mark','what we paid vs fair price, per fill',`<div class="chart sm"><canvas id="co_sl"></canvas></div>`)}</div>
- <div class="sec">${card('Cost table','',`<div class="scroll"><table><thead><tr><th>Strategy</th><th>Avg spread</th><th>Fill vs mark</th><th>Fill vs mark (pts)</th><th>Fees paid ₹</th><th>Backtest assumed</th></tr></thead><tbody>
- ${T.map(x=>`<tr><td><span class="sw" style="background:${C[x.i]}"></span><b>${x.id}</b> ${x.name}</td><td class="num">${pc(x.spread_pct)}</td><td class="num">${pc(x.slip_pct)}</td><td class="num">${fx(x.slip_pts,2)}</td><td class="num">${rs(x.fees,x.lots)}</td><td class="num mut">2% + $0.5</td></tr>`).join('')||'<tr><td colspan="6" class="empty">First entries-ku apram data varum</td></tr>'}</tbody></table></div>`)}</div>`;
+ <div class="sec">${card('Cost table','',`<div class="scroll"><table><thead><tr><th>Strategy</th><th>Avg spread</th><th>Fill vs mark</th><th>Fill vs mark (pts)</th><th>Avg option price</th><th>Backtest assumed</th><th>Real vs backtest</th><th>Fees paid ₹</th></tr></thead><tbody>
+ ${T.map(x=>`<tr><td><span class="sw" style="background:${C[x.i]}"></span><b>${x.id}</b> ${x.name}</td><td class="num">${pc(x.spread_pct)}</td><td class="num">${pc(x.slip_pct)}</td><td class="num">${fx(x.slip_pts,2)}</td><td class="num">${fx(x.mk,1)}</td><td class="num mut">${fx(x.btPts,2)} pts (${pc(x.btPct)})</td><td class="num ${x.slip_pts>x.btPts?'neg':'pos'}">${x.btPts?(x.slip_pts/x.btPts).toFixed(1)+'×':'–'}</td><td class="num">${fee(x.fees,x.lots)}</td></tr>`).join('')||'<tr><td colspan="8" class="empty">Data appears after the first entries</td></tr>'}</tbody></table></div>`)}</div>`;
  if(!T.length)return;const o=base();o.plugins.legend.display=false;o.scales.y.ticks.callback=v=>v.toFixed(1)+'%';
  mk('co_sp',{type:'bar',data:{labels:T.map(x=>x.id),datasets:[{data:T.map(x=>x.spread_pct*100),backgroundColor:T.map(x=>C[x.i]),borderRadius:6}]},options:o});
  const o2=base();o2.scales.y.ticks.callback=v=>v.toFixed(1)+'%';
- mk('co_sl',{type:'bar',data:{labels:T.map(x=>x.id),datasets:[{label:'Live',data:T.map(x=>x.slip_pct*100),backgroundColor:T.map(x=>C[x.i]),borderRadius:6},{label:'Backtest (2%)',data:T.map(()=>2),backgroundColor:'rgba(148,163,184,.35)',borderRadius:6}]},options:o2})}
+ mk('co_sl',{type:'bar',data:{labels:T.map(x=>x.id),datasets:[{label:'Live',data:T.map(x=>x.slip_pct*100),backgroundColor:T.map(x=>C[x.i]),borderRadius:6},{label:'Backtest assumption (2% + $0.5)',data:T.map(x=>x.btPct*100),backgroundColor:'rgba(148,163,184,.35)',borderRadius:6}]},options:o2})}
 /* ------------------------------------------------------------ RESEARCH */
 function research(){const el=$('v-research');if(!R){el.innerHTML='<div class="card"><div class="empty">Loading…</div></div>';return}
  const k=(l,v,s)=>`<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
@@ -294,7 +295,7 @@ function research(){const el=$('v-research');if(!R){el.innerHTML='<div class="ca
 /* ------------------------------------------------------------ EVENTS */
 function events(){$('v-events').innerHTML=card('Event log','same messages go to Telegram',S.events.map(e=>`<div class="ev"><span class="mono mut">${e.t}</span><b>${e.strat}</b><span><span class="chip ${e.kind==='exit'?'a':['sl','risk','error'].includes(e.kind)?'n':e.kind==='entry'?'p':''}">${e.kind}</span></span><pre>${(e.msg||'').replace(/</g,'&lt;')}</pre></div>`).join('')||'<div class="empty">No events yet</div>')}
 /* ------------------------------------------------------------ main */
-function draw(){if(!S)return;head();tabsBar();({live,overview,strategies,trades,costs,research,events})[tab]()}
+function draw(){if(!S)return;if(!TABS.some(t=>t[0]===tab))tab='live';head();tabsBar();({live,overview,strategies,trades,costs,research,events})[tab]()}
 async function load(){try{S=await (await fetch('data/state.json?ts='+Date.now())).json();draw()}catch(e){$('etxt').textContent='data error'}}
 fetch('data/research.json?ts='+Date.now()).then(r=>r.json()).then(j=>{R=j;if(tab==='research')draw()}).catch(()=>{});
 load();setInterval(()=>{if(!['research','trades'].includes(tab))load()},30000);
